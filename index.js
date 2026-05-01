@@ -398,7 +398,7 @@ async function solveAltchaIfPresent(page, accountLogPrefix, maxAttempts = 15, wa
         
         const delayMins = Math.floor(Math.random() * (10 - 3 + 1)) + 3;
         console.log(`\n======================================================`);
-        console.log(`${prefix} 任务开始，为了模拟真人行为，延时 ${delayMins} 分钟...`);
+        console.log(`${prefix} 任务开始，随机延时 ${delayMins} 分钟...`);
         await new Promise(r => setTimeout(r, delayMins * 60 * 1000));
 
         const activeProxy = await setupProxyForAccount(user.proxy);
