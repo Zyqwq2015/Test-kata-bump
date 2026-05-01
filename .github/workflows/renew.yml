@@ -1,0 +1,120 @@
+name: Kata-bump Auto Renew
+
+on:
+  schedule:
+    - cron: '10 23 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  renew:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
+
+    - name: Check State (UTC)
+      id: check_state
+      env:
+        ALL_SECRETS: ${{ toJSON(secrets) }}
+      run: |
+        python3 -c '
+        import os, json, datetime, hashlib, re
+        try:
+            secrets = json.loads(os.environ.get("ALL_SECRETS", "{}"))
+        except:
+            secrets = {}
+        try:
+            with open("state.json", "r") as f: state = json.load(f)
+        except:
+            state = {}
+            
+        now = datetime.datetime.now(datetime.timezone.utc)
+        skip = True
+        
+        for key, val in secrets.items():
+            if re.match(r"^KATA_ACCOUNT_\d+$", key) and val:
+                parts = val.strip().split()
+                if len(parts) >= 2:
+                    username = parts[0]
+                    user_hash = hashlib.md5(username.strip().lower().encode("utf-8")).hexdigest()
+                    record = state.get(user_hash)
+                    
+                    if not record:
+                        skip = False
+                        break
+                        
+                    try:
+                        target_date = datetime.datetime.fromisoformat(record.replace("Z", "+00:00"))
+                        days_diff = (target_date - now).total_seconds() / 86400
+                        if days_diff <= 2.0:
+                            skip = False
+                            break
+                    except:
+                        skip = False
+                        break
+                        
+        with open(os.environ["GITHUB_ENV"], "a") as f:
+            f.write(f"SKIP_RUN={str(skip).lower()}\n")
+        '
+
+    - name: Setup Node.js
+      if: env.SKIP_RUN != 'true'
+      uses: actions/setup-node@v5
+      with:
+        node-version: '20'
+        
+    - name: Install Dependencies
+      if: env.SKIP_RUN != 'true'
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y xvfb
+        npm install
+        npx playwright install-deps chrome
+
+    - name: Setup Environment (WARP & Singbox)
+      if: env.SKIP_RUN != 'true'
+      run: |
+        curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
+        echo "deb [arch=amd64 signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
+        sudo apt-get update -qq
+        sudo apt-get install -y cloudflare-warp
+        warp-cli --accept-tos registration new || warp-cli --accept-tos register
+        warp-cli --accept-tos mode proxy || warp-cli --accept-tos set-mode proxy
+        warp-cli --accept-tos proxy port 40000 || warp-cli --accept-tos set-proxy-port 40000
+        warp-cli --accept-tos connect
+        wget -q https://github.com/SagerNet/sing-box/releases/download/v1.10.3/sing-box-1.10.3-linux-amd64.tar.gz -O sb.tar.gz
+        tar xzf sb.tar.gz --strip-components=1 --wildcards '*/sing-box'
+        chmod +x sing-box
+
+    - name: Run Automation Script
+      if: env.SKIP_RUN != 'true'
+      env:
+        ALL_SECRETS: ${{ toJSON(secrets) }}
+      run: xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" node index.js
+
+    - name: Commit and Push state.json
+      if: env.SKIP_RUN != 'true'
+      run: |
+        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add state.json
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "docs: update state.json [skip ci]"
+          git push
+        fi
+
+    - name: Upload Screenshots
+      if: always() && env.SKIP_RUN != 'true'
+      uses: actions/upload-artifact@v5
+      with:
+        name: screenshots
+        path: screenshots/
