@@ -78,7 +78,7 @@ jobs:
         npm install
         npx playwright install-deps chrome
 
-    - name: Setup Environment (WARP & Singbox)
+    - name: Setup Proxy Environment
       if: env.SKIP_RUN != 'true'
       run: |
         curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
