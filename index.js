@@ -525,6 +525,9 @@ async function solveAltchaIfPresent(page, accountLogPrefix, maxAttempts = 15, wa
                                     if (match && match[1]) {
                                         dateStr = match[1];
                                         let pDate = new Date(dateStr + " UTC");
+                                        if (!isNaN(pDate) && pDate.getFullYear() < 2020) {
+                                            pDate = new Date(dateStr + " " + new Date().getFullYear() + " UTC");
+                                        }
                                         if (!isNaN(pDate)) updateState(user.username, pDate.toISOString());
                                     }
                                     renewSuccess = true;
