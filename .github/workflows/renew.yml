@@ -2,7 +2,7 @@ name: Kata-bump Auto Renew
 
 on:
   schedule:
-    - cron: '10 23 * * *'
+    - cron: '15 1 * * *'
   workflow_dispatch:
 
 permissions:
@@ -52,8 +52,7 @@ jobs:
                         
                     try:
                         target_date = datetime.datetime.fromisoformat(record.replace("Z", "+00:00"))
-                        days_diff = (target_date - now).total_seconds() / 86400
-                        if days_diff <= 2.0:
+                        if now >= target_date:
                             skip = False
                             break
                     except:
