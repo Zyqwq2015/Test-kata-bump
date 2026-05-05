@@ -512,7 +512,7 @@ async function solveAltchaIfPresent(page, accountLogPrefix, maxAttempts = 15, wa
                         let hasCaptchaError = false;
                         try {
                             const startVerify = Date.now();
-                            while (Date.now() - startVerify < 3000) {
+                            while (Date.now() - startVerify < 10000) {
                                 if (await page.getByText('Please complete the captcha to continue').isVisible()) {
                                     hasCaptchaError = true;
                                     break;
@@ -520,15 +520,24 @@ async function solveAltchaIfPresent(page, accountLogPrefix, maxAttempts = 15, wa
                                 const notTimeLoc = page.getByText("You can't renew your server yet");
                                 if (await notTimeLoc.isVisible()) {
                                     const text = await notTimeLoc.innerText().catch(() => '');
-                                    const match = text.match(/as of\s+(.*?)\s+\(/);
+
+                                    console.log(`${prefix} [调试] 页面原文: ${text}`);
+
+                                    const match = text.match(/as of\s+(.*?)(?:\s+\(|$)/);
                                     let dateStr = 'Unknown';
                                     if (match && match[1]) {
-                                        dateStr = match[1];
+                                        dateStr = match[1].trim();
                                         let pDate = new Date(dateStr + " UTC");
-                                        if (!isNaN(pDate) && pDate.getFullYear() < 2020) {
+
+                                        if (isNaN(pDate) || pDate.getFullYear() < 2020) {
                                             pDate = new Date(dateStr + " " + new Date().getFullYear() + " UTC");
                                         }
-                                        if (!isNaN(pDate)) updateState(user.username, pDate.toISOString());
+
+                                        if (!isNaN(pDate)) {
+                                            updateState(user.username, pDate.toISOString());
+                                        } else {
+                                            console.log(`${prefix} ⚠️ 日期解析失败，原始字符串: "${dateStr}"，state.json 未更新`);
+                                        }
                                     }
                                     renewSuccess = true;
                                     console.log(`${prefix} ⏳ 续订时间未到，允许续订时间: ${dateStr}`);
