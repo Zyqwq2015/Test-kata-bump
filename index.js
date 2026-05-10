@@ -396,7 +396,7 @@ async function solveAltchaIfPresent(page, accountLogPrefix, maxAttempts = 15, wa
         const masked = maskUsernameForLog(user.username);
         const prefix = `[${masked}]`;
         
-        const delayMins = Math.floor(Math.random() * (1 - 0 + 1)) + 0;
+        const delayMins = Math.floor(Math.random() * (12 - 2 + 1)) + 2;
         console.log(`\n======================================================`);
         console.log(`${prefix} 任务开始，随机延时 ${delayMins} 分钟...`);
         await new Promise(r => setTimeout(r, delayMins * 60 * 1000));
