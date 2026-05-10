@@ -19,8 +19,8 @@ const TG_CHAT = SECRETS.TG_CHAT || process.env.TG_CHAT;
 
 const CHROME_PATH = process.env.CHROME_PATH || '/usr/bin/google-chrome';
 const DEBUG_PORT = 9222;
-const VIEWPORT_WIDTH = 1280;
-const VIEWPORT_HEIGHT = 720;
+const VIEWPORT_WIDTH = 1920;
+const VIEWPORT_HEIGHT = 1080;
 const RENEW_MAX_ATTEMPTS = 3;
 let singboxProcess = null;
 
@@ -396,7 +396,7 @@ async function solveAltchaIfPresent(page, accountLogPrefix, maxAttempts = 15, wa
         const masked = maskUsernameForLog(user.username);
         const prefix = `[${masked}]`;
         
-        const delayMins = Math.floor(Math.random() * (10 - 3 + 1)) + 3;
+        const delayMins = Math.floor(Math.random() * (1 - 0 + 1)) + 0;
         console.log(`\n======================================================`);
         console.log(`${prefix} 任务开始，随机延时 ${delayMins} 分钟...`);
         await new Promise(r => setTimeout(r, delayMins * 60 * 1000));
